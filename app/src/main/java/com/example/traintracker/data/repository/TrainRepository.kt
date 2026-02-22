@@ -10,7 +10,6 @@ import com.example.traintracker.data.model.TrainResponse
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 
 class TrainRepository(
@@ -18,26 +17,27 @@ class TrainRepository(
     private val context: Context
 ) {
     private val apiService = RetrofitInstance.getApi(context)
-    private val gson = Gson()
 
-    suspend fun getLiveStationData(stationCode: String): TrainResponse = 
+    suspend fun getLiveStationData(stationCode: String): TrainResponse = withContext(Dispatchers.IO) {
         apiService.getLiveStationData(stationCode)
-
-    suspend fun getServiceTimetable(serviceId: String): TimetableResponse = 
-        apiService.getServiceTimetable(serviceId)
-
-    suspend fun loadStations(): List<Station> = withContext(Dispatchers.IO) {
-        runCatching {
-            context.assets.open("uk_stations.json").use { input ->
-                val listType = object : TypeToken<List<Station>>() {}.type
-                gson.fromJson<List<Station>>(input.bufferedReader(), listType)
-            }
-        }.getOrDefault(emptyList())
     }
 
-    fun getFavorites(): Flow<List<FavoriteStation>> = stationDao.getFavorites()
+    suspend fun getServiceTimetable(serviceId: String): TimetableResponse = withContext(Dispatchers.IO) {
+        apiService.getServiceTimetable(serviceId)
+    }
 
-    fun isFavorite(crsCode: String): Flow<Boolean> = stationDao.isFavorite(crsCode)
+    suspend fun loadStations(): List<Station> = withContext(Dispatchers.IO) {
+        try {
+            val json = context.assets.open("uk_stations.json")
+                .bufferedReader().use { it.readText() }
+            val listType = object : TypeToken<List<Station>>() {}.type
+            Gson().fromJson(json, listType)
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    fun getFavorites() = stationDao.getFavorites()
 
     suspend fun addFavorite(station: FavoriteStation) = withContext(Dispatchers.IO) {
         stationDao.addFavorite(station)

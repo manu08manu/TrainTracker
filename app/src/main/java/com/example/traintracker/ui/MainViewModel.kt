@@ -74,7 +74,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val isCurrentStationFavorite: StateFlow<Boolean> = _currentCrsCode
         .flatMapLatest { code ->
             if (code == null) flowOf(false)
-            else repository.isFavorite(code)
+            else repository.getFavorites().map { favs -> favs.any { it.crsCode == code } }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
@@ -114,6 +114,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _currentCrsCode.value = code
     }
 
+    fun updateCurrentStation(code: String) {
+        fetchStationData(code)
+    }
+
     fun fetchServiceTimetable(serviceId: String) {
         viewModelScope.launch {
             _callingPatternUiState.value = CallingPatternUiState.Loading
@@ -130,33 +134,32 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _callingPatternUiState.value = CallingPatternUiState.Idle
     }
 
-    fun toggleFavorite() {
-        val code = _currentCrsCode.value ?: return
-        val station = _stations.value.find { it.crsCode == code } ?: return
+    fun removeFavorite(station: FavoriteStation) {
         viewModelScope.launch {
-            val isFav = isCurrentStationFavorite.value
-            if (isFav) repository.removeFavorite(FavoriteStation(code, station.stationName))
-            else repository.addFavorite(FavoriteStation(code, station.stationName))
+            repository.removeFavorite(station)
         }
     }
 
-    fun findNearestStation(location: Location): Station? {
-        val stations = _stations.value.filter { it.lat != null && it.long != null }
-        if (stations.isEmpty()) return null
-
-        var nearest: Station? = null
-        var minDistance = Float.MAX_VALUE
-        val stationLoc = Location("")
-
-        for (station in stations) {
-            stationLoc.latitude = station.lat!!
-            stationLoc.longitude = station.long!!
-            val distance = location.distanceTo(stationLoc)
-            if (distance < minDistance) {
-                minDistance = distance
-                nearest = station
-            }
+    fun toggleFavorite(): Boolean {
+        val code = _currentCrsCode.value ?: return false
+        val station = _stations.value.find { it.crsCode == code } ?: return false
+        viewModelScope.launch {
+            val isFav = favorites.value.any { it.crsCode == code }
+            if (isFav) repository.removeFavorite(FavoriteStation(code, station.stationName))
+            else repository.addFavorite(FavoriteStation(code, station.stationName))
         }
-        return nearest
+        return true
+    }
+
+    fun findNearestStation(location: Location): Station? {
+        return _stations.value
+            .filter { it.lat != null && it.long != null }
+            .minByOrNull { station ->
+                val stationLoc = Location("").apply {
+                    latitude = station.lat!!
+                    longitude = station.long!!
+                }
+                location.distanceTo(stationLoc)
+            }
     }
 }
