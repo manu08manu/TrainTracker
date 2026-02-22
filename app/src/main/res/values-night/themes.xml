@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.TrainTracker" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Primary: Light Blue for Dark Mode -->
+        <item name="colorPrimary">#95ccff</item>
+        <item name="colorOnPrimary">#003352</item>
+
+        <!-- Secondary: Light Gold/Yellow -->
+        <item name="colorSecondary">#dec48c</item>
+        <item name="colorOnSecondary">#3e2e00</item>
+
+        <!-- Surface: Dark Grey/Black -->
+        <item name="colorSurface">#111416</item>
+        <item name="colorOnSurface">#e2e2e6</item>
+        <item name="colorOnSurfaceVariant">#c4c7cf</item>
+
+        <!-- Error: Pinkish Red -->
+        <item name="colorError">#ffb4ab</item>
+        <item name="colorOnError">#690005</item>
+
+        <item name="android:statusBarColor">#111416</item>
+
+        <!-- Material 2 compatibility bridge -->
+        <item name="colorPrimaryVariant">#95ccff</item>
+        <item name="colorSecondaryVariant">#dec48c</item>
+        <item name="colorAccent">?attr/colorSecondary</item>
+    </style>
+</resources>
